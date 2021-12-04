@@ -1,0 +1,24 @@
+$color--black: #000;
+$color--white: #fff;
+
+html,
+body
+{
+    overflow: hidden;
+	background-color: $color--black;
+}
+
+body {
+	background-color: $color--black;
+	.webgl {
+		position: fixed;
+		top: 0;
+		left: 0;
+		z-index: 5;
+	}
+}
+
+.container {
+	position: fixed;
+	z-index: 10;
+}
