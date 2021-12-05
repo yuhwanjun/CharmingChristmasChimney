@@ -1,24 +1,46 @@
-$color--black: #000;
+$color--black: #1d1d1f;
 $color--white: #fff;
 
 html,
 body
 {
-    overflow: hidden;
 	background-color: $color--black;
 }
 
 body {
-	background-color: $color--black;
 	.webgl {
 		position: fixed;
 		top: 0;
 		left: 0;
-		z-index: 5;
+		z-index: 10;
 	}
 }
 
-.container {
-	position: fixed;
-	z-index: 10;
+.section
+{
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Cabin', sans-serif;
+    color: $color--white;
+    text-transform: uppercase;
+    font-size: 7vmin;
+    padding-left: 10%;
+    padding-right: 10%;
+	h1, h2 {
+		z-index: 20;
+	}
+	#image {
+		z-index: 20;
+		top: 0;
+	}
+	#click {
+		cursor: pointer;
+	}
+}
+
+section:nth-child(odd)
+{
+    justify-content: flex-end;
 }
