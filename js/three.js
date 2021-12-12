@@ -2,51 +2,201 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
 import gsap from 'gsap'
+import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry.js';
+import { nodeFrame } from 'three/examples/jsm/renderers/webgl/nodes/WebGLNodes.js';
+import * as Nodes from 'three/examples/jsm/renderers/nodes/Nodes.js';
+
+//다른 js 임포트
+// import Experience from './src/Experience/Experience.js'
+// const experience = new Experience()
 
 // Debug
-// const gui = new dat.GUI()
+const gui = new dat.GUI()
 const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const scene = new THREE.Scene()
 
-/* Textures */
 const textureLoader = new THREE.TextureLoader()
-
-// 문 텍스쳐 로드
-const doorTextures = {
-	color : textureLoader.load('/textures/door/color.jpg'),
-	alpha : textureLoader.load('/textures/door/alpha.jpg'),
-	ao : textureLoader.load('/textures/door/ambientOcclusion.jpg'),
-	height : textureLoader.load('/textures/door/height.jpg'),
-	normal : textureLoader.load('/textures/door/normal.jpg'),
-	metalness : textureLoader.load('/textures/door/metalness.jpg'),
-	roughness : textureLoader.load('/textures/door/roughness.jpg')
+	
+const texturesInfo = {
+	door : {
+		texture : ['color', 'alpha', 'ambientOcclusion', 'height', 'normal', 'metalness', 'roughness']
+	},
+	bricks : {
+		texture : ['color', 'ambientOcclusion', 'normal', 'roughness']
+	},
+	grass : {
+		texture : ['color', 'ambientOcclusion', 'normal', 'roughness']
+	}
 }
 
-const brickTextures = {
-	color : textureLoader.load('/textures/bricks/color.jpg'),
-	ao : textureLoader.load('/textures/bricks/ambientOcclusion.jpg'),
-	normal : textureLoader.load('/textures/bricks/normal.jpg'),
-	roughness : textureLoader.load('/textures/bricks/roughness.jpg')
+//키값 매핑해주는 함수
+function matchTextureKeyValue(name){
+	//arrName에 해당하는 texturesInfo 에서 배열을 가져온다.
+	const textureKeyArr = texturesInfo[`${name}`].texture
+	const makingTextureObject = {}
+	//class의 textureArr에 객체 생성
+	for(let i = 0; i < textureKeyArr.length; i++){
+		makingTextureObject[`${textureKeyArr[i]}`] = textureLoader.load(`/textures/${name}/${textureKeyArr[i]}.jpg`);
+	}
+	return makingTextureObject
 }
 
-const grassTextures = {
-	color : textureLoader.load('/textures/grass/color.jpg'),
-	ao : textureLoader.load('/textures/grass/ambientOcclusion.jpg'),
-	normal : textureLoader.load('/textures/grass/normal.jpg'),
-	roughness : textureLoader.load('/textures/grass/roughness.jpg')
+/* Textures class */
+class Texture{
+	constructor(name) {
+		this.name = name;
+		this.texture = matchTextureKeyValue(name)
+	}
+	wrapSet(sizeX, sizeY){
+		for(let i = 0; i < Object.keys(this.texture).length; i++) {
+			this.texture[`${Object.keys(this.texture)[i]}`].repeat.set(sizeX, sizeY)
+		}
+	}
+	repeatWrapping(){
+		for(let i = 0; i < Object.keys(this.texture).length; i++) {
+			this.texture[`${Object.keys(this.texture)[i]}`].wrapS = THREE.RepeatWrapping
+			this.texture[`${Object.keys(this.texture)[i]}`].wrapT = THREE.RepeatWrapping
+		}
+	}
 }
-/* Object */
+
+// const Door = new Texture('door')
+const Brick = new Texture('bricks')
+const Grass = new Texture('grass')
+Grass.wrapSet(8,8)
+Grass.repeatWrapping()
+
+/* 
+ # Object
+*/
+
+class Card{
+	constructor(_name, _textureSrc){
+		this.name = _name
+		this.cardGroup = new THREE.Group();
+		
+		//##size
+		let size = [3 , 4]
+		this.size = size
+		
+		//## position
+		this.position = [0,0,0]
+		
+		//## rotate
+		this.rotate = [0,0,0]
+		
+		this.frontImgSrc = textureLoader.load(_textureSrc, function(tex){
+			size[0] = tex.image.width
+			size[1] = tex.image.height
+		})
+		
+		//카드 사이즈 설정
+		this.cardGeo = new THREE.BoxGeometry(1, 0.001, 1)
+		
+		//앞면 생성
+		this.frontMat = new THREE.MeshStandardMaterial()
+		this.frontMat.metalness = 0.45
+		this.frontMat.roughness = 0.65
+		this.cardFront = new THREE.Mesh(this.cardGeo, this.frontMat)
+		this.frontMat.map = this.frontImgSrc //이미지를 카드 앞면에 맵핑
+		this.cardGroup.add(this.cardFront) //카드 그룹에 앞면 추가
+		this.cardFront.castShadow = true
+		
+		//뒷면 생성
+		this.backMat = new THREE.MeshStandardMaterial()
+		this.cardBack = new THREE.Mesh(this.cardGeo, this.backMat)
+		this.cardGroup.add(this.cardBack)
+		this.cardBack.castShadow = true
+		this.cardBack.position.y = -0.001
+		
+		this.cardGroup.castShadow = true
+	}
+	addScene(_scene){
+		_scene.add(this.cardGroup)
+	}
+	changeTex(_changeImgSrc){
+		this.frontImgSrc = textureLoader.load(_changeImgSrc)
+		this.frontMat.map = this.frontImgSrc
+	}
+	changePosition(_x,_y,_z){
+		this.position = [_x,_y,_z]
+		this.cardGroup.position.x = this.position[0]
+		this.cardGroup.position.y = this.position[1]
+		this.cardGroup.position.z = this.position[2]
+	}
+	changeScale(_x,_z){
+		this.size = [_x,_z]
+		this.cardGroup.scale.x = 1.5
+		this.cardGroup.scale.z = 1.5 * this.size[1] / this.size[0]
+	}
+	changeRotate(_x, _y, _z){
+		this.rotate = [_x, _y, _z]
+		this.cardGroup.rotation.x = Math.PI * this.rotate[0]
+		this.cardGroup.rotation.y = Math.PI * this.rotate[1]
+		this.cardGroup.rotation.z = Math.PI * this.rotate[2]
+	}
+}
+
+let MyCard = new Card('myCard', '/textures/card/new.jpg')
+MyCard.addScene(scene)
+MyCard.changePosition(0, 6, 1)
+MyCard.changeScale(MyCard.size[0], MyCard.size[1])
+MyCard.changeRotate(0.4,0,0)
+
+console.log(MyCard)
+
+let ReciveCard = new Card('reciveCard', '/textures/card/new.jpg')
+ReciveCard.addScene(scene)
+ReciveCard.changePosition(0, 1, 1)
+ReciveCard.changeScale(ReciveCard.size[0], ReciveCard.size[1])
+ReciveCard.changeRotate(0.4,0,0)
+ReciveCard.changeTex('/textures/card/cardback.jpg')
+
+//카드 이미지 적용
+const inputImage = document.querySelector('#image');
+inputImage.addEventListener('change', inputImageUpload)
+
+function inputImageUpload() {
+	const _URL = window.URL || window.webkitURL;
+
+	const limitWH = {width: 2000, height: 2000}
+	const upImage = inputImage.files[0]
+	let file, img;
+	console.log(upImage)
+	if((file = upImage)) {
+		img = new Image();
+		img.onload = function() {
+			if(this.width < limitWH.width && this.height < limitWH.height) {
+				console.log(this.width + " " + this.height);
+				MyCard.changeTex(`${img.src}`)
+				MyCard.changeScale(this.width, this.height)
+			} else {
+				inputImage.type = 'radio';
+				inputImage.type = 'file';
+				alert("사이즈가 맞지 않습니다!")	
+			}
+		};
+		img.onerror = function() {
+			console.log( "not a valid file: " + file.type);
+		};
+		img.src = _URL.createObjectURL(file);
+		console.log(img.src)
+	}
+}
+
 // 집 그룹 생성
 const house = new THREE.Group()
 scene.add(house)
+
 const wallMat = new THREE.MeshStandardMaterial({
-		map: brickTextures.color,
-		aoMap: brickTextures.ao,
-		normalMap: brickTextures.normal,
-		roughnessMap: brickTextures.roughness
+		map: Brick.texture.color,
+		aoMap: Brick.texture.ambientOcclusion,
+		normalMap: Brick.texture.normal,
+		roughnessMap: Brick.texture.roughness
 	})
+
 // 벽 생성
 const walls01 = new THREE.Mesh(
 	new THREE.BoxGeometry(1, 8, 4),
@@ -92,138 +242,16 @@ house.scale.x = 0.5
 house.scale.y = 0.5
 house.scale.z = 0.5
 
-//카드 생성
-const card = new THREE.Group()
-scene.add(card)
-
-const cardFrontTex = {
-	new : textureLoader.load('/textures/card/new.jpg')
-}
-const cardFrontGeo = new THREE.BoxGeometry(3, 0.001, 4)
-const cardFrontMat = new THREE.MeshStandardMaterial()
-cardFrontMat.map = cardFrontTex.new
-cardFrontMat.metalness = 0.45
-cardFrontMat.roughness = 0.65
-const cardTexChange = {
-	change: () => {
-		cardFrontMat.map = cardFrontTex.new
-	}
-}
-const cardFront = new THREE.Mesh(cardFrontGeo, cardFrontMat)
-card.add(cardFront)
-
-const cardBackTex = {
-	color : textureLoader.load('/textures/card/cardback.jpg')
-}
-//카드 뒷면
-const cardBackGeo = new THREE.BoxGeometry(3, 0.001, 4)
-const cardBackMat = new THREE.MeshStandardMaterial()
-cardBackMat.map = cardBackTex.color
-const cardBack = new THREE.Mesh(cardBackGeo, cardBackMat)
-card.add(cardBack)
-cardBack.position.y = -0.001
-
-card.position.y = 12
-card.position.z = 1
-card.scale.x = 0.4
-card.scale.y = 0.4
-card.scale.z = 0.4
-card.castShadow = true
-cardFront.castShadow = true
-cardBack.castShadow = true
-card.rotation.x = Math.PI * 0.4
-
-//받을 카드 그룹 생성
-const reciveCard = new THREE.Group()
-scene.add(reciveCard)
-
-//받을 카드 앞면 추가
-const rcardFrontTex = {
-	new : textureLoader.load('/textures/card/new.jpg')
-}
-const rcardFrontGeo = new THREE.BoxGeometry(3, 0.001, 4)
-const rcardFrontMat = new THREE.MeshStandardMaterial()
-rcardFrontMat.map = rcardFrontTex.new
-rcardFrontMat.metalness = 0.45
-rcardFrontMat.roughness = 0.65
-
-const rcardFront = new THREE.Mesh(rcardFrontGeo, rcardFrontMat)
-reciveCard.add(rcardFront)
-
-//받을 카드 뒷면 추가
-const rcardBackTex = {
-	color : textureLoader.load('/textures/card/cardback.jpg')
-}
-const rcardBackGeo = new THREE.BoxGeometry(3, 0.001, 4)
-const rcardBackMat = new THREE.MeshStandardMaterial()
-rcardBackMat.map = rcardBackTex.color
-const rcardBack = new THREE.Mesh(rcardBackGeo, rcardBackMat)
-reciveCard.add(rcardBack)
-rcardBack.position.y = -0.001
-
-// 받을 카드 효과 추가
-reciveCard.position.y = 2
-reciveCard.position.z = 0.5
-reciveCard.scale.x = 0.4
-reciveCard.scale.y = 0.4
-reciveCard.scale.z = 0.4
-reciveCard.castShadow = true
-rcardFront.castShadow = true
-rcardBack.castShadow = true
-reciveCard.rotation.x = Math.PI * 0.5
-
-
-// var tex = textureLoader.load("/textures/Fire.png");
-// var fire = new THREE.Fire( tex );
-// scene.add( fire );
-
-// 문 생성
-/*
-const door = new THREE.Mesh(
-	new THREE.PlaneGeometry(2.2, 2.2, 100, 100),
-	new THREE.MeshStandardMaterial({
-		map: doorTextures.color,
-		transparent: true,
-		alphaMap: doorTextures.alpha,
-		aoMap: doorTextures.ao,
-		displacementMap: doorTextures.height,
-		displacementScale: 0.1,
-		normalMap: doorTextures.normal,
-		metalnessMap: doorTextures.metalness,
-		roughnessMap: doorTextures.roughness
-	})
-)
-door.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(door.geometry.attributes.uv.array, 2))
-door.position.y = 1
-door.position.z = 2 + 0.01
-house.add(door)
-*/
-
 // 바닥
 const floor = new THREE.Mesh(
 	new THREE.PlaneGeometry(20, 20),
 	new THREE.MeshStandardMaterial({
-		map: grassTextures.color,
-		aoMap: grassTextures.ao,
-		normalMap: grassTextures.normal,
-		roughnessMap: grassTextures.roughness
+		map: Grass.texture.color,
+		aoMap: Grass.texture.ambientOcclusion,
+		normalMap:  Grass.texture.normal,
+		roughnessMap:  Grass.texture.roughness
 	})
 )
-
-grassTextures.color.repeat.set(8, 8)
-grassTextures.ao.repeat.set(8, 8)
-grassTextures.normal.repeat.set(8, 8)
-grassTextures.roughness.repeat.set(8, 8)
-
-grassTextures.color.wrapS = THREE.RepeatWrapping
-grassTextures.ao.wrapS = THREE.RepeatWrapping
-grassTextures.normal.wrapS = THREE.RepeatWrapping
-grassTextures.roughness.wrapS = THREE.RepeatWrapping
-
-grassTextures.color.wrapT = THREE.RepeatWrapping
-grassTextures.ao.wrapT = THREE.RepeatWrapping
-grassTextures.normal.wrapT = THREE.RepeatWrapping
-grassTextures.roughness.wrapT = THREE.RepeatWrapping
 
 floor.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(floor.geometry.attributes.uv.array, 2))
 floor.rotation.x = - Math.PI * 0.5
@@ -258,16 +286,18 @@ const ambientLight = new THREE.AmbientLight('#b9d5ff', 0.22)
 scene.add(ambientLight)
 
 // Directional light
-const moonLight = new THREE.DirectionalLight('#b9d5ff', 0.9)
+const moonLight = new THREE.DirectionalLight('#b9d5ff', 0.8)
 moonLight.position.set(-1, 3, 2)
-moonLight.lookAt(card.position)
+moonLight.lookAt(MyCard.cardGroup.position)
 scene.add(moonLight)
 
 /**
  * Fog
  */
-const fog = new THREE.Fog('#1d1d1f', 1, 15)
-scene.fog = fog
+// const fog = new THREE.Fog('#1d1d1f', 1, 15)
+// scene.fog = fog
+
+scene.fog = new THREE.FogExp2( 0x000000, 0.001 );
 
 /* Sizes */
 const sizes = {
@@ -298,7 +328,6 @@ scene.add(camera)
 
 // Controls
 // const controls = new OrbitControls(camera, canvas)
-// controls.enableZoom = false
 // controls.enableDamping = true
 
 /* Renderer */
@@ -332,7 +361,7 @@ const cameraStatus = [
 ]
 const cardStatus = [
 	{ x : 0, y : 12, z : 1, target : recivePos(house) },
-	{ x : 0, y : 6, z : 1, target : recivePos(card) },
+	{ x : 0, y : 6, z : 1, target : recivePos(MyCard) },
 	{ x : 0, y : 4, z : 0, target : recivePos(house) },
 ]
 
@@ -368,7 +397,7 @@ function cameraMove(sceneNum) {
 
 function objMove(sceneNum){
 	gsap.to(
-		card.position,{
+		MyCard.position,{
 			duration: 1.5,
 			ease: 'power2.inOut',
 			x: `${cardStatus[sceneNum].x}`,
@@ -383,10 +412,6 @@ function sceneMove(sceneNum) {
 	objMove(sceneNum)
 	console.log(camera.position)
 	console.log(targetObj.position)
-}
-
-function scene4() {
-	
 }
 
 // scroll
@@ -414,20 +439,20 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
-	
+	nodeFrame.update();
 	camera.lookAt(cameraStatus[currentSection].lA)
 	
     // Update controls
     // controls.update()
 	if(currentSection === 1)
-    {	
-		card.rotation.x = Math.PI * 0.45
-		card.rotation.z =  0.05 * Math.sin(Math.PI * elapsedTime * 0.1)
-		card.rotation.y =  0.05 * Math.cos(Math.PI * elapsedTime * 0.1)
-    }else {
-		card.rotation.x = Math.PI * 0.5
-		card.rotation.z = 0
-		card.rotation.y = 0
+	{	
+		MyCard.cardGroup.rotation.x = Math.PI * 0.45
+		MyCard.cardGroup.rotation.z =  0.05 * Math.sin(Math.PI * elapsedTime * 0.1)
+		MyCard.cardGroup.rotation.y =  0.05 * Math.cos(Math.PI * elapsedTime * 0.1)
+	}else {
+		MyCard.cardGroup.rotation.x = Math.PI * 0.5
+		MyCard.cardGroup.rotation.z = 0
+		MyCard.cardGroup.rotation.y = 0
 	}
     // Render
     renderer.render(scene, camera)
@@ -440,7 +465,7 @@ tick()
 
 document.getElementById('click').onclick = function() {
 	gsap.to(
-		card.position,{
+		MyCard.cardGroup.position,{
 			duration: 3,
 			ease: 'power1.Out',
 			x: '0',
@@ -467,7 +492,7 @@ document.getElementById('click').onclick = function() {
 		}
 	)
 	gsap.to(
-		reciveCard.position,{
+		ReciveCard.cardGroup.position,{
 			delay: 2,
 			duration: 5,
 			ease: 'power1.in',
@@ -478,35 +503,3 @@ document.getElementById('click').onclick = function() {
 	)
 }
 
-//카드 이미지 적용
-const inputImage = document.querySelector('#image');
-const _URL = window.URL || window.webkitURL;
-
-const limitWH = {width: 2000, height: 1500}
-
-inputImage.addEventListener('change', inputImageUpload)
-
-function inputImageUpload() {
-	const upImage = inputImage.files[0]
-	let file, img;
-	console.log(upImage)
-	if((file = upImage)) {
-		img = new Image();
-		img.onload = function() {
-			if(this.width < limitWH.width && this.height < limitWH.height) {
-				console.log(this.width + " " + this.height);
-				cardFrontTex.new = textureLoader.load(`${img.src}`)
-				cardTexChange.change()
-			} else {
-				inputImage.type = 'radio';
-				inputImage.type = 'file';
-				alert("사이즈가 맞지 않습니다!")	
-			}
-		};
-		img.onerror = function() {
-			console.log( "not a valid file: " + file.type);
-		};
-		img.src = _URL.createObjectURL(file);
-		console.log(img.src)
-	}
-}
