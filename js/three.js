@@ -39,7 +39,43 @@ gltfLoader.load(
 		scene.add(gltf.scene)
 	}
 )
-// const gui = new dat.GUI()
+
+/**
+ * Particles
+ */
+// Geometry
+const particlesGeometry = new THREE.BufferGeometry()
+const count = 500
+
+const positions = new Float32Array(count * 3) // Multiply by 3 because each position is composed of 3 values (x, y, z)
+
+for(let i = 0; i < count * 3; i++) // Multiply by 3 for same reason
+{
+    positions[i] = (Math.random() - 0.5) * 60 // Math.random() - 0.5 to have a random value between -0.5 and +0.5
+}
+
+particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)) // Create the Three.js BufferAttribute and specify that each information is composed of 3 values
+
+const particlesMaterial = new THREE.PointsMaterial()
+particlesMaterial.size = 0.3
+particlesMaterial.sizeAttenuation = true
+particlesMaterial.color = new THREE.Color('#ffffffff')
+
+//텍스쳐 적용
+const particleTexture = textureLoader.load('/textures/particles/3.png')
+
+particlesMaterial.map = particleTexture
+
+particlesMaterial.transparent = true
+particlesMaterial.alphaMap = particleTexture
+
+particlesMaterial.depthWrite = false 
+
+// Points
+const particles = new THREE.Points(particlesGeometry, particlesMaterial)
+scene.add(particles)
+
+
 /* 
  # card
 */
@@ -293,17 +329,22 @@ unrealBloomPass.threshold = 0.5
 /* Animate */
 const clock = new THREE.Clock()
 let previousTime = 0
-
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
-	// nodeFrame.update();
 	cam01.camLookAt(cam01.target.position)
 	
-    // Update controls
-    // controls.update()
+	for(let i = 0; i < count; i++)
+    {
+        let i3 = i * 20
+
+        const x = particlesGeometry.attributes.position.array[i3]
+        particlesGeometry.attributes.position.array[i3 + 1] = Math.sin(elapsedTime + x)
+    }
+    particlesGeometry.attributes.position.needsUpdate = true
+	
 	if(currentSection === 1)
 	{	
 		MyCard.cardGroup.rotation.x = Math.PI * 0.45
@@ -336,18 +377,12 @@ const tick = () =>
 tick()
 
 const clickCard = document.getElementById('click')
+const cardIn = document.getElementById('card-in')
+const scrollDown = document.getElementById('scroll-down')
 
 clickCard.onclick = function() {
-	// currentSection = 3
-	sceneMove(currentSection)
-	createSection()
 	clickCard.style.display = 'none'
+	cardIn.style.display = 'block'
+	scrollDown.style.display = 'block'
 }
 
-
-function createSection(){
-	const body = document.getElementById("body")
-	const newSection = document.createElement("section")
-	newSection.setAttribute("class", "section")
-	body.appendChild(newSection)
-}

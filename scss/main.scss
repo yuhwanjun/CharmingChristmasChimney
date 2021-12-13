@@ -40,6 +40,14 @@ body {
 		cursor: pointer;
 	}
 }
+#card-in {
+	display: none;
+}
+#scroll-down {
+	display: none;
+	text-align: center;
+}
+
 
 section:nth-child(odd)
 {
