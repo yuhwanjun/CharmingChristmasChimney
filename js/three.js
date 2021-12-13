@@ -1,8 +1,13 @@
 import * as THREE from 'three'
+import * as dat from 'lil-gui'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import gsap from 'gsap'
 //다른 js 임포트
 import Card from './src/Card.js'
+import {setAnima} from './src/MoveSet.js'
 
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
@@ -10,7 +15,6 @@ const scene = new THREE.Scene()
 //loader
 const textureLoader = new THREE.TextureLoader()
 const gltfLoader = new GLTFLoader()
-
 
 gltfLoader.load(
 	'/models/ccc.gltf',
@@ -35,23 +39,23 @@ gltfLoader.load(
 		scene.add(gltf.scene)
 	}
 )
-
+// const gui = new dat.GUI()
 /* 
  # card
 */
-
 let MyCard = new Card('myCard', '/textures/card/new.jpg')
 MyCard.addScene(scene)
-MyCard.changePosition(0, 6, 1)
+MyCard.changePosition(0, 12, 0)
 MyCard.changeScale(MyCard.size[0], MyCard.size[1])
 MyCard.changeRotate(0.4,0,0)
 
 let ReciveCard = new Card('reciveCard', '/textures/card/new.jpg')
 ReciveCard.addScene(scene)
-ReciveCard.changePosition(0, 1, 1)
+ReciveCard.changePosition(0, 5, 0)
 ReciveCard.changeScale(ReciveCard.size[0], ReciveCard.size[1])
 ReciveCard.changeRotate(0.4,0,0)
 ReciveCard.changeTex('/textures/card/cardback.jpg')
+ReciveCard.cardGroup.visible = false
 
 //카드 이미지 적용
 const inputImage = document.querySelector('#image');
@@ -85,19 +89,14 @@ function inputImageUpload() {
 	}
 }
 
-// target object 
-const targetObj = new THREE.Object3D();
-scene.add( targetObj );
-targetObj.position.y = 2
-
 /* Lights */
 
 // Ambient light
-const ambientLight = new THREE.AmbientLight('#b9d5ff', 0.22)
+const ambientLight = new THREE.AmbientLight('#b9d5ff', 0.5)
 scene.add(ambientLight)
 
 // Directional light
-const moonLight = new THREE.DirectionalLight('#b9d5ff', 0.8)
+const moonLight = new THREE.DirectionalLight('#b9d5ff', 1)
 moonLight.position.set(-1, 3, 2)
 moonLight.lookAt(MyCard.cardGroup.position)
 scene.add(moonLight)
@@ -109,7 +108,7 @@ moonLight.shadow.camera.far = 15
 /**
  * Fog
  */
-// const fog = new THREE.Fog('#0000000', 1, 15)
+// const fog = new THREE.Fog('#ffffffff', 5, 20)
 // scene.fog = fog
 
 /* Sizes */
@@ -125,23 +124,16 @@ window.addEventListener('resize', () =>
     sizes.height = window.innerHeight
 
     // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
+    cam01.three.aspect = sizes.width / sizes.height
+    cam01.three.updateProjectionMatrix()
 
     // Update renderer
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+	
+	effectComposer.setSize(sizes.width, sizes.height)
 })
 
-/* Camera */
-
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-scene.add(camera)
-
-// Controls
-// const controls = new OrbitControls(camera, canvas)
-// controls.enableDamping = true
 
 /* Renderer */
 const renderer = new THREE.WebGLRenderer({
@@ -155,73 +147,115 @@ renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.setClearAlpha(0)
 
-
-
-//scene
 function recivePos(obj) {
 	let recpos = [ obj.position.x, obj.position.y, obj.position.z]
 	return recpos
 }
 
-const cameraStatus = [
-	{ x : 4, y : 5, z : 5, lA : targetObj.position, orbit : false, target : [0, 2, 0] },
-	{ x : 0, y : 6.2, z : 3, lA : targetObj.position, orbit : true, target : [0, 6, 0] },
-	{ x : 0, y : 4.5, z : 1.8	, lA : targetObj.position, orbit : false, target : [0, 4.5, 1] },
-]
-const cardStatus = [
-	{ x : 0, y : 12, z : 1, target : [0,0,0] },
-	{ x : 0, y : 6, z : 1, target : recivePos(MyCard) },
-	{ x : 0, y : 4, z : 0, target : [0,0,0] },
-]
+/* Camera */
 
-function cameraValue(sceneNum) {
-	camera.position.x = cameraStatus[sceneNum].x
-	camera.position.y = cameraStatus[sceneNum].y
-	camera.position.z = cameraStatus[sceneNum].z
-	camera.lookAt(cameraStatus[sceneNum].target)
+class Camera{
+	constructor(_name){
+		this.name = _name
+		this.three = new THREE.PerspectiveCamera(75 , sizes.width / sizes.height, 0.1, 100)
+		this.target = new THREE.Object3D();
+		this.three.lookAt(this.target.position)
+	}
+	addScene(_sceneName){
+		_sceneName.add(this.three)
+		_sceneName.add(this.target)
+	}
+	camLookAt(target){
+		this.three.lookAt(target)
+	}
+	moveCamPostion(_x,_y,_z){
+		this.three.position.x = _x
+		this.three.position.y = _y
+		this.three.position.z = _z
+	}
+	moveTargetPosition(_x,_y,_z){
+		this.target.position.x = _x
+		this.target.position.y = _y
+		this.target.position.z = _z
+	}
+	cameraMove(_sceneNum, _duration, _ease){
+		gsap.to(
+			this.three.position,{
+				duration: _duration,
+				ease: _ease,
+				x: `${setAnima[_sceneNum].camPos[0]}`,
+				y: `${setAnima[_sceneNum].camPos[1]}`,
+				z: `${setAnima[_sceneNum].camPos[2]}`
+			}
+		)
+	}
+	targetMove(_sceneNum, _duration, _ease) {
+		gsap.to(
+			this.target.position,{
+				duration: _duration,
+				ease: _ease,
+				x: `${setAnima[_sceneNum].targetPos[0]}`,
+				y: `${setAnima[_sceneNum].targetPos[1]}`,
+				z: `${setAnima[_sceneNum].targetPos[2]}`
+			}
+		)
+	}
 }
-cameraValue(0)
 
-function cameraMove(sceneNum) {
-	gsap.to(
-		camera.position,{
-			duration: 1.5,
-			ease: 'power2.inOut',
-			x: `${cameraStatus[sceneNum].x}`,
-			y: `${cameraStatus[sceneNum].y}`,
-			z: `${cameraStatus[sceneNum].z}`
-		}
-	)
-	gsap.to(
-		targetObj.position,{
-			duration: 1.5,
-			ease: 'power2.inOut',
-			x: `${cameraStatus[sceneNum].target[0]}`,
-			y: `${cameraStatus[sceneNum].target[1]}`,
-			z: `${cameraStatus[sceneNum].target[2]}`
-		}
-	)
-	// controls.enabled = cameraStatus[sceneNum].orbit
-}
+const cam01 = new Camera('cam01')
+cam01.addScene(scene)
+cam01.moveCamPostion(setAnima[0].camPos[0],setAnima[0].camPos[1],setAnima[0].camPos[2])
+cam01.moveTargetPosition(setAnima[0].targetPos[0],setAnima[0].targetPos[1],setAnima[0].targetPos[2])
 
-function objMove(sceneNum){
-	gsap.to(
-		MyCard.position,{
-			duration: 1.5,
-			ease: 'power2.inOut',
-			x: `${cardStatus[sceneNum].x}`,
-			y: `${cardStatus[sceneNum].y}`,
-			z: `${cardStatus[sceneNum].z}`
-		}
-	)
-}
+//--------------------------------------
 
 function sceneMove(sceneNum) {
-	cameraMove(sceneNum)
-	objMove(sceneNum)
-	console.log(camera.position)
-	console.log(targetObj.position)
+	switch (sceneNum) {
+		case 0:
+			console.log('sceneNum 0');
+			cam01.cameraMove(sceneNum, 1.5, 'power2.inOut');
+			cam01.targetMove(sceneNum, 1.5, 'power2.inOut');
+			MyCard.objMove(sceneNum, 1.5, 'power2.inOut');
+			console.log(MyCard.cardGroup)
+			break;
+		case 1:
+			console.log('sceneNum 1');
+			cam01.cameraMove(sceneNum, 1.5, 'power2.inOut');
+			cam01.targetMove(sceneNum, 1.5, 'power2.inOut');
+			MyCard.objMove(sceneNum, 1.5, 'power2.inOut');
+			break;
+		case 2:
+			console.log('sceneNum 2');
+			cam01.cameraMove(sceneNum, 1.5, 'power2.inOut');
+			cam01.targetMove(sceneNum, 1.5, 'power2.inOut');
+			MyCard.objMove(sceneNum, 1.5, 'power2.inOut');
+			break;
+		case 3:
+			console.log('sceneNum 3');
+			cam01.cameraMove(sceneNum, 4, 'power1.inOut');
+			cam01.targetMove(sceneNum, 6, 'power1.Out');
+			MyCard.objMove(sceneNum, 3, 'power1.Out');
+			ReciveCard.cardGroup.visible = true
+			setTimeout(function() {
+				MyCard.cardGroup.visible = false
+			}, 3000);
+			gsap.to(
+				ReciveCard.cardGroup.position,{
+					delay: 2,
+					duration: 5,
+					ease: 'power1.inOut',
+					x: '0',
+					y: '2.5',
+					z: '1'
+				}
+			)
+			break;
+		default:
+			console.log(`Sorry, we are out of ${sceneNum}.`);
+	}
 }
+
+//-----------------------------------------
 
 // scroll
 let scrollY = window.scrollY
@@ -239,6 +273,23 @@ window.addEventListener('scroll', () =>
     }
 })
 
+/**
+ * Post processing
+ */
+const effectComposer = new EffectComposer(renderer)
+effectComposer.setSize(sizes.width, sizes.height)
+effectComposer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+const renderPass = new RenderPass(scene, cam01.three)
+effectComposer.addPass(renderPass)
+const unrealBloomPass = new UnrealBloomPass()
+effectComposer.addPass(unrealBloomPass)
+
+unrealBloomPass.strength = 0.24
+unrealBloomPass.radius = 0.5
+unrealBloomPass.threshold = 0.5
+
+// gui.add(unrealBloomPass, 'enabled')
+
 /* Animate */
 const clock = new THREE.Clock()
 let previousTime = 0
@@ -249,7 +300,7 @@ const tick = () =>
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
 	// nodeFrame.update();
-	camera.lookAt(cameraStatus[currentSection].lA)
+	cam01.camLookAt(cam01.target.position)
 	
     // Update controls
     // controls.update()
@@ -263,8 +314,20 @@ const tick = () =>
 		MyCard.cardGroup.rotation.z = 0
 		MyCard.cardGroup.rotation.y = 0
 	}
+	
+	if(currentSection === 3)
+	{	
+		ReciveCard.cardGroup.rotation.x = Math.PI * 0.45
+		ReciveCard.cardGroup.rotation.z =  0.05 * Math.sin(Math.PI * elapsedTime * 0.1)
+		ReciveCard.cardGroup.rotation.y =  0.05 * Math.cos(Math.PI * elapsedTime * 0.1)
+	}else {
+		ReciveCard.cardGroup.rotation.x = Math.PI * 0.4
+		ReciveCard.cardGroup.rotation.z = 0
+		ReciveCard.cardGroup.rotation.y = 0
+	}
     // Render
-    renderer.render(scene, camera)
+    // renderer.render(scene, cam01.three)
+	effectComposer.render()
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
@@ -272,43 +335,19 @@ const tick = () =>
 
 tick()
 
-document.getElementById('click').onclick = function() {
-	gsap.to(
-		MyCard.cardGroup.position,{
-			duration: 3,
-			ease: 'power1.Out',
-			x: '0',
-			y: '2.5',
-			z: '0'
-		},
-	)
-	gsap.to(
-		camera.position,{
-			duration: 4,
-			ease: 'power1.inOut',
-			x: '0',
-			y: '2',
-			z: '3'
-		}
-	)
-	gsap.to(
-		targetObj.position,{
-			duration: 6,
-			ease: 'power1.Out',
-			x: '0',
-			y: '0',
-			z: '0'
-		}
-	)
-	gsap.to(
-		ReciveCard.cardGroup.position,{
-			delay: 2,
-			duration: 5,
-			ease: 'power1.in',
-			x: '0',
-			y: '0.05',
-			z: '0.5'
-		}
-	)
+const clickCard = document.getElementById('click')
+
+clickCard.onclick = function() {
+	// currentSection = 3
+	sceneMove(currentSection)
+	createSection()
+	clickCard.style.display = 'none'
 }
 
+
+function createSection(){
+	const body = document.getElementById("body")
+	const newSection = document.createElement("section")
+	newSection.setAttribute("class", "section")
+	body.appendChild(newSection)
+}

@@ -1,4 +1,7 @@
 import * as THREE from 'three'
+import gsap from 'gsap'
+import {setAnima} from './MoveSet.js'
+
 const textureLoader = new THREE.TextureLoader()
 
 export default class Card{
@@ -65,5 +68,16 @@ export default class Card{
 		this.cardGroup.rotation.x = Math.PI * this.rotate[0]
 		this.cardGroup.rotation.y = Math.PI * this.rotate[1]
 		this.cardGroup.rotation.z = Math.PI * this.rotate[2]
+	}
+	objMove(_sceneNum, _duration, _ease){
+		gsap.to(
+			this.cardGroup.position,{
+				duration: _duration,
+				ease: _ease,
+				x: `${setAnima[_sceneNum].cardPos[0]}`,
+				y: `${setAnima[_sceneNum].cardPos[1]}`,
+				z: `${setAnima[_sceneNum].cardPos[2]}`
+			}
+		)
 	}
 }
