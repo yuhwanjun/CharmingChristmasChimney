@@ -33,6 +33,7 @@
   ],
   "description": "Weasley's Wizard Wheezes",
   "dependencies": {
+    "firebase": "^9.6.1",
     "gsap": "^3.5.1",
     "lil-gui": "^0.14.0",
     "three": "^0.135.0"

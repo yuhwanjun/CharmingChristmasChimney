@@ -59,7 +59,7 @@ particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 
 const particlesMaterial = new THREE.PointsMaterial()
 particlesMaterial.size = 0.3
 particlesMaterial.sizeAttenuation = true
-particlesMaterial.color = new THREE.Color('#ffffffff')
+particlesMaterial.color = new THREE.Color('#ffffff')
 
 //텍스쳐 적용
 const particleTexture = textureLoader.load('/textures/particles/3.png')
