@@ -1,10 +1,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as dat from 'lil-gui'
 import gsap from 'gsap'
-import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry.js';
-import { nodeFrame } from 'three/examples/jsm/renderers/webgl/nodes/WebGLNodes.js';
-import * as Nodes from 'three/examples/jsm/renderers/nodes/Nodes.js';
+// import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry.js';
+// import { nodeFrame } from 'three/examples/jsm/renderers/webgl/nodes/WebGLNodes.js';
+// import * as Nodes from 'three/examples/jsm/renderers/nodes/Nodes.js';
 
 //다른 js 임포트
 // import Experience from './src/Experience/Experience.js'
@@ -18,7 +19,34 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 
 const textureLoader = new THREE.TextureLoader()
-	
+const gltfLoader = new GLTFLoader()
+
+const redMatcapTexture = textureLoader.load('/textures/matcaps/redbricks.png')
+const redMatCapMat = new THREE.MeshMatcapMaterial()
+redMatCapMat.matcap = redMatcapTexture
+
+const whiteMatcapTexture = textureLoader.load('/textures/matcaps/whitebricks.png')
+const whiteMatCapMat = new THREE.MeshMatcapMaterial()
+whiteMatCapMat.matcap = whiteMatcapTexture
+
+gltfLoader.load(
+    '/models/ccc.gltf',
+    (gltf) =>
+    {
+		gltf.scene.scale.set(0.1, 0.1, 0.1)
+		const matChildren = gltf.scene.children[0].children
+		//red
+		for(let i = 0; i < matChildren[1].children.length; i++){
+			matChildren[1].children[i].material = redMatCapMat
+		}
+		//white
+		for(let i = 0; i < matChildren[0].children.length; i++){
+			matChildren[0].children[i].material = whiteMatCapMat
+		}
+		scene.add(gltf.scene)
+    }
+)
+
 const texturesInfo = {
 	door : {
 		texture : ['color', 'alpha', 'ambientOcclusion', 'height', 'normal', 'metalness', 'roughness']
@@ -186,93 +214,76 @@ function inputImageUpload() {
 	}
 }
 
-// 집 그룹 생성
-const house = new THREE.Group()
-scene.add(house)
+// // 집 그룹 생성
+// const house = new THREE.Group()
+// scene.add(house)
 
-const wallMat = new THREE.MeshStandardMaterial({
-		map: Brick.texture.color,
-		aoMap: Brick.texture.ambientOcclusion,
-		normalMap: Brick.texture.normal,
-		roughnessMap: Brick.texture.roughness
-	})
+// const wallMat = new THREE.MeshStandardMaterial({
+// 		map: Brick.texture.color,
+// 		aoMap: Brick.texture.ambientOcclusion,
+// 		normalMap: Brick.texture.normal,
+// 		roughnessMap: Brick.texture.roughness
+// 	})
 
-// 벽 생성
-const walls01 = new THREE.Mesh(
-	new THREE.BoxGeometry(1, 8, 4),
-	wallMat
-)
-walls01.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls01.geometry.attributes.uv.array, 2))
-walls01.position.x = 2
-walls01.position.y = 4
-walls01.position.z = 0
-house.add(walls01)
+// // 벽 생성
+// const walls01 = new THREE.Mesh(
+// 	new THREE.BoxGeometry(1, 8, 4),
+// 	wallMat
+// )
+// walls01.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls01.geometry.attributes.uv.array, 2))
+// walls01.position.x = 2
+// walls01.position.y = 4
+// walls01.position.z = 0
+// house.add(walls01)
 
-const walls02 = new THREE.Mesh(
-	new THREE.BoxGeometry(1, 8, 4),
-	wallMat
-)
-walls02.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls02.geometry.attributes.uv.array, 2))
-walls02.position.x = -2
-walls02.position.y = 4
-walls02.position.z = 0
-house.add(walls02)
+// const walls02 = new THREE.Mesh(
+// 	new THREE.BoxGeometry(1, 8, 4),
+// 	wallMat
+// )
+// walls02.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls02.geometry.attributes.uv.array, 2))
+// walls02.position.x = -2
+// walls02.position.y = 4
+// walls02.position.z = 0
+// house.add(walls02)
 
-const walls03 = new THREE.Mesh(
-	new THREE.BoxGeometry(3, 8, 1),
-	wallMat
-)
-walls03.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls03.geometry.attributes.uv.array, 2))
-walls03.position.x = 0
-walls03.position.y = 4
-walls03.position.z = -1.5
-house.add(walls03)
+// const walls03 = new THREE.Mesh(
+// 	new THREE.BoxGeometry(3, 8, 1),
+// 	wallMat
+// )
+// walls03.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls03.geometry.attributes.uv.array, 2))
+// walls03.position.x = 0
+// walls03.position.y = 4
+// walls03.position.z = -1.5
+// house.add(walls03)
 
-const walls04 = new THREE.Mesh(
-	new THREE.BoxGeometry(3, 5, 1),
-	wallMat
-)
-walls04.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls04.geometry.attributes.uv.array, 2))
-walls04.position.x = 0
-walls04.position.y = 5.5
-walls04.position.z = 1.5
-house.add(walls04)
+// const walls04 = new THREE.Mesh(
+// 	new THREE.BoxGeometry(3, 5, 1),
+// 	wallMat
+// )
+// walls04.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls04.geometry.attributes.uv.array, 2))
+// walls04.position.x = 0
+// walls04.position.y = 5.5
+// walls04.position.z = 1.5
+// house.add(walls04)
 
-house.scale.x = 0.5
-house.scale.y = 0.5
-house.scale.z = 0.5
-
-// 바닥
-const floor = new THREE.Mesh(
-	new THREE.PlaneGeometry(20, 20),
-	new THREE.MeshStandardMaterial({
-		map: Grass.texture.color,
-		aoMap: Grass.texture.ambientOcclusion,
-		normalMap:  Grass.texture.normal,
-		roughnessMap:  Grass.texture.roughness
-	})
-)
-
-floor.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(floor.geometry.attributes.uv.array, 2))
-floor.rotation.x = - Math.PI * 0.5
-floor.position.y = 0
-scene.add(floor)
+// house.scale.x = 0.5
+// house.scale.y = 0.5
+// house.scale.z = 0.5
 
 // Door light
 const doorLight = new THREE.PointLight('#ff7d46', 1, 7)
 doorLight.position.set(0, 2.2, 2.7)
-house.add(doorLight)
+// house.add(doorLight)
 
 doorLight.castShadow = true
 doorLight.shadow.mapSize.width = 256
 doorLight.shadow.mapSize.height = 256
 doorLight.shadow.camera.far = 7
 
-walls01.castShadow = true
-walls02.castShadow = true
-walls03.castShadow = true
-walls04.castShadow = true
-floor.receiveShadow = true
+// walls01.castShadow = true
+// walls02.castShadow = true
+// walls03.castShadow = true
+// walls04.castShadow = true
 
 // target object 
 const targetObj = new THREE.Object3D();
@@ -360,9 +371,9 @@ const cameraStatus = [
 	{ x : 0, y : 4.5, z : 1.8	, lA : targetObj.position, orbit : false, target : [0, 4.5, 1] },
 ]
 const cardStatus = [
-	{ x : 0, y : 12, z : 1, target : recivePos(house) },
+	{ x : 0, y : 12, z : 1, target : [0,0,0] },
 	{ x : 0, y : 6, z : 1, target : recivePos(MyCard) },
-	{ x : 0, y : 4, z : 0, target : recivePos(house) },
+	{ x : 0, y : 4, z : 0, target : [0,0,0] },
 ]
 
 function cameraValue(sceneNum) {
@@ -439,7 +450,7 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
-	nodeFrame.update();
+	// nodeFrame.update();
 	camera.lookAt(cameraStatus[currentSection].lA)
 	
     // Update controls
