@@ -15,6 +15,11 @@ body {
 		z-index: 0;
 	}
 }
+img{
+	height: 200px;
+	width: 200px;
+	border: 2px solid #ffffff;
+}
 
 .section
 {
@@ -40,6 +45,11 @@ body {
 		cursor: pointer;
 	}
 }
+#section-03{
+	flex-direction: column;
+	justify-content: center;
+}
+
 #card-in {
 	display: none;
 }
@@ -47,6 +57,10 @@ body {
 	display: none;
 	text-align: center;
 }
+.textlog {
+	font-size: 12px;	
+}
+	
 
 
 section:nth-child(odd)

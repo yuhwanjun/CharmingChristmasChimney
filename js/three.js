@@ -8,6 +8,7 @@ import gsap from 'gsap'
 //다른 js 임포트
 import Card from './src/Card.js'
 import {setAnima} from './src/MoveSet.js'
+import {randomGetCard} from './firebase.js'
 
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
@@ -85,6 +86,8 @@ MyCard.changePosition(0, 12, 0)
 MyCard.changeScale(MyCard.size[0], MyCard.size[1])
 MyCard.changeRotate(0.4,0,0)
 
+// console.log(MyCard.cardGroup)
+
 let ReciveCard = new Card('reciveCard', '/textures/card/new.jpg')
 ReciveCard.addScene(scene)
 ReciveCard.changePosition(0, 5, 0)
@@ -92,6 +95,11 @@ ReciveCard.changeScale(ReciveCard.size[0], ReciveCard.size[1])
 ReciveCard.changeRotate(0.4,0,0)
 ReciveCard.changeTex('/textures/card/cardback.jpg')
 ReciveCard.cardGroup.visible = false
+
+setTimeout(function() {
+  	console.log(randomGetCard.imgSrc);
+	ReciveCard.changeTex(randomGetCard.imgSrc)
+}, 3000);
 
 //카드 이미지 적용
 const inputImage = document.querySelector('#image');
@@ -102,8 +110,8 @@ function inputImageUpload() {
 
 	const limitWH = {width: 2000, height: 2000}
 	const upImage = inputImage.files[0]
+	
 	let file, img;
-	console.log(upImage)
 	if((file = upImage)) {
 		img = new Image();
 		img.onload = function() {
@@ -111,6 +119,8 @@ function inputImageUpload() {
 				console.log(this.width + " " + this.height);
 				MyCard.changeTex(`${img.src}`)
 				MyCard.changeScale(this.width, this.height)
+				// file = upImage
+				// console.log(upImage)
 			} else {
 				inputImage.type = 'radio';
 				inputImage.type = 'file';
@@ -121,7 +131,7 @@ function inputImageUpload() {
 			console.log( "not a valid file: " + file.type);
 		};
 		img.src = _URL.createObjectURL(file);
-		console.log(img.src)
+		// console.log(img.src)
 	}
 }
 
@@ -248,26 +258,26 @@ cam01.moveTargetPosition(setAnima[0].targetPos[0],setAnima[0].targetPos[1],setAn
 function sceneMove(sceneNum) {
 	switch (sceneNum) {
 		case 0:
-			console.log('sceneNum 0');
+			// console.log('sceneNum 0');
 			cam01.cameraMove(sceneNum, 1.5, 'power2.inOut');
 			cam01.targetMove(sceneNum, 1.5, 'power2.inOut');
 			MyCard.objMove(sceneNum, 1.5, 'power2.inOut');
 			console.log(MyCard.cardGroup)
 			break;
 		case 1:
-			console.log('sceneNum 1');
+			// console.log('sceneNum 1');
 			cam01.cameraMove(sceneNum, 1.5, 'power2.inOut');
 			cam01.targetMove(sceneNum, 1.5, 'power2.inOut');
 			MyCard.objMove(sceneNum, 1.5, 'power2.inOut');
 			break;
 		case 2:
-			console.log('sceneNum 2');
+			// console.log('sceneNum 2');
 			cam01.cameraMove(sceneNum, 1.5, 'power2.inOut');
 			cam01.targetMove(sceneNum, 1.5, 'power2.inOut');
 			MyCard.objMove(sceneNum, 1.5, 'power2.inOut');
 			break;
 		case 3:
-			console.log('sceneNum 3');
+			// console.log('sceneNum 3');
 			cam01.cameraMove(sceneNum, 4, 'power1.inOut');
 			cam01.targetMove(sceneNum, 6, 'power1.Out');
 			MyCard.objMove(sceneNum, 3, 'power1.Out');
@@ -375,14 +385,3 @@ const tick = () =>
 }
 
 tick()
-
-const clickCard = document.getElementById('click')
-const cardIn = document.getElementById('card-in')
-const scrollDown = document.getElementById('scroll-down')
-
-clickCard.onclick = function() {
-	clickCard.style.display = 'none'
-	cardIn.style.display = 'block'
-	scrollDown.style.display = 'block'
-}
-
