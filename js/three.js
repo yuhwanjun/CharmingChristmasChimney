@@ -111,7 +111,7 @@ inputImage.addEventListener('change', inputImageUpload)
 function inputImageUpload() {
 	const _URL = window.URL || window.webkitURL;
 
-	const limitWH = {width: 2000, height: 2000}
+	const limitWH = {width: 200000, height: 200000}
 	const upImage = inputImage.files[0]
 	
 	let file, img;
