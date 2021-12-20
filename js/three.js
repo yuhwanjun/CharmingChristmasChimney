@@ -97,9 +97,12 @@ ReciveCard.changeTex('/textures/card/cardback.jpg')
 ReciveCard.cardGroup.visible = false
 
 setTimeout(function() {
-  	console.log(randomGetCard.imgSrc);
+	console.log(randomGetCard.imgSize[0])
 	ReciveCard.changeTex(randomGetCard.imgSrc)
-}, 3000);
+	ReciveCard.changeScale(randomGetCard.imgSize[0], randomGetCard.imgSize[1])
+}, 5000);
+
+let reciveCardSize = [];
 
 //카드 이미지 적용
 const inputImage = document.querySelector('#image');
@@ -116,11 +119,12 @@ function inputImageUpload() {
 		img = new Image();
 		img.onload = function() {
 			if(this.width < limitWH.width && this.height < limitWH.height) {
-				console.log(this.width + " " + this.height);
+				// console.log(this.width + " " + this.height);
 				MyCard.changeTex(`${img.src}`)
 				MyCard.changeScale(this.width, this.height)
+				reciveCardSize = [this.width, this.height]
 				// file = upImage
-				// console.log(upImage)
+				console.log(reciveCardSize)
 			} else {
 				inputImage.type = 'radio';
 				inputImage.type = 'file';
@@ -128,6 +132,7 @@ function inputImageUpload() {
 			}
 		};
 		img.onerror = function() {
+			alert('파일 형식을 확인해주세요!')
 			console.log( "not a valid file: " + file.type);
 		};
 		img.src = _URL.createObjectURL(file);
@@ -385,3 +390,4 @@ const tick = () =>
 }
 
 tick()
+
